@@ -1,7 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ProcessWorkItems;
+using WorkItemsService;
 using Shouldly;
-using System.Threading;
 using Moq;
 
 namespace ProcessWorkItems_Tests
@@ -35,7 +34,7 @@ namespace ProcessWorkItems_Tests
                            .Callback<IWorkItem>((workItem) =>
                            {
                                moqWorkItem.Raise(x => x.WorkItemStatusUpdated += null,
-                                    moqWorkItem.Object, 
+                                    moqWorkItem.Object,
                                     new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Running));
                            });
             workerManager.Service = (IAsyncRun)moqAsyncService.Object;
@@ -43,22 +42,6 @@ namespace ProcessWorkItems_Tests
             //Act
             workerManager.AddWorkItem((IWorkItem)moqWorkItem.Object);
             var result = workerManager.IsServiceRunning;
-
-            //Assert
-            result.ShouldBeTrue();
-        }
-
-        [TestMethod]
-        public void WorkItemManager_Start_Service_Test()
-        {
-            //Arrange
-            IWorkItemManager workerManager1 = WorkItemManagerProvider.GetWorkItemManager();
-
-            //Act
-            //workerManager1.Start();
-            //Thread.Sleep(10);
-
-            var result = workerManager1.IsServiceRunning;
 
             //Assert
             result.ShouldBeTrue();
