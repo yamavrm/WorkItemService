@@ -8,8 +8,13 @@ namespace ProcessWorkItems_Tests
     [TestClass]
     public class WorkItemsTests
     {
+        private IWorkItemManager GetWorkItemManager()
+        {
+            return WorkItemManagerProvider.GetWorkItemManager();
+        }
+
         [TestMethod]
-        public void WorkItemManager_GetSingleton_Test()
+        public void When_GetTwoWorkItemManagerObjects_Expect_ShouldRefSameObject()
         {
             //Arrange
             IWorkItemManager workerManager1 = WorkItemManagerProvider.GetWorkItemManager();
@@ -20,7 +25,7 @@ namespace ProcessWorkItems_Tests
         }
 
         [TestMethod]
-        public void WorkItemManager_WhenWorkItemAdded_ShoulBe_Running()
+        public void When_WorkItemAdded_Expect_ServiceShouldExecuteIt()
         {
             IWorkItemManager workerManager = WorkItemManagerProvider.GetWorkItemManager();
 
@@ -35,17 +40,46 @@ namespace ProcessWorkItems_Tests
                            {
                                moqWorkItem.Raise(x => x.WorkItemStatusUpdated += null,
                                     moqWorkItem.Object,
-                                    new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Running));
+                                    new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Completed));
                            });
             workerManager.Service = (IAsyncRun)moqAsyncService.Object;
 
             //Act
             workerManager.AddWorkItem((IWorkItem)moqWorkItem.Object);
-            var result = workerManager.IsServiceRunning;
 
             //Assert
-            result.ShouldBeTrue();
+            moqAsyncService.Verify(c => c.DoTask(It.IsAny<IWorkItem>()), Times.Once);
         }
 
+        [TestMethod]
+        public void When_WorkItemsAdded_Expect_ItShouldRunInTheOrder()
+        {
+            IWorkItemManager workerManager = WorkItemManagerProvider.GetWorkItemManager();
+
+            //Arrange
+            string workItemNames = "";
+            var moqWorkItem1 = new Mock<IWorkItem>();
+            moqWorkItem1.Setup(c => c.Name).Returns("A");
+            moqWorkItem1.Setup(c => c.Duration).Returns(10);
+
+            var moqWorkItem2 = new Mock<IWorkItem>();
+            moqWorkItem2.Setup(c => c.Name).Returns("B");
+            moqWorkItem2.Setup(c => c.Duration).Returns(10);
+
+            Mock<IAsyncRun> moqAsyncService = new Mock<IAsyncRun>();
+            moqAsyncService.Setup(c => c.DoTask(It.IsAny<IWorkItem>()))
+                           .Callback<IWorkItem>((workItem) =>
+                           {
+                               workItemNames += workItem.Name.ToString();
+                           });
+            workerManager.Service = (IAsyncRun)moqAsyncService.Object;
+
+            //Act
+            workerManager.AddWorkItem((IWorkItem)moqWorkItem1.Object);
+            workerManager.AddWorkItem((IWorkItem)moqWorkItem2.Object);
+
+            //Assert
+            Assert.AreEqual("AB", workItemNames);
+        }
     }
 }

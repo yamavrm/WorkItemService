@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace WorkItemsService
 {
     public class WorkItemManager : IWorkItemManager
     {
         private readonly Queue<IWorkItem> workItemQueue = new Queue<IWorkItem>();
+        private readonly object lockQueue = new Object();
         private IAsyncRun asyncService;
 
         public event EventHandler QueueItemAdded;
@@ -26,7 +24,7 @@ namespace WorkItemsService
 
         public void AddWorkItem(IWorkItem workItem)
         {
-            lock (this.workItemQueue)
+            lock (lockQueue)
             {
                 workItemQueue.Enqueue(workItem);
             }
@@ -54,13 +52,19 @@ namespace WorkItemsService
 
         private void ExecuteWorkItem()
         {
-            if (this.workItemQueue.Count > 0 && !this.IsServiceRunning)
+            if (!this.IsServiceRunning)
             {
-                lock(this.workItemQueue)
+                IWorkItem workItem = null;
+                lock (lockQueue)
                 {
-                    var workItem = workItemQueue.Dequeue();
+                    if (this.workItemQueue.Count > 0)
+                    {
+                        workItem = this.workItemQueue.Dequeue();
+                    }
+                }
+                if (workItem != null)
+                {
                     workItem.WorkItemStatusUpdated += WorkItem_WorkItemStatusUpdated;
-                    //Task.Run(() => { workItem.Execute(); });
                     asyncService.DoTask(workItem);
                     StatusUpdated?.Invoke(this, new StatusUpdatedEventArgs($"{workItem.Name} - Started"));
                 }
@@ -69,15 +73,12 @@ namespace WorkItemsService
 
         private void WorkItem_WorkItemStatusUpdated(object sender, WorkItemStatusUpdatedEventArgs e)
         {
-            if (e.Status == WorkItemStatus.Running)
+            this.IsServiceRunning = e.Status == WorkItemStatus.Running ? true : false;
+            
+            if (e.Status == WorkItemStatus.Completed)
             {
-                this.IsServiceRunning = true;
-            }
-            else if (e.Status == WorkItemStatus.Completed)
-            {
-                var workItem = (IWorkItem)sender;
+                IWorkItem workItem = (IWorkItem)sender;
                 workItem.WorkItemStatusUpdated -= WorkItem_WorkItemStatusUpdated;
-                this.IsServiceRunning = false;
                 StatusUpdated?.Invoke(this, new StatusUpdatedEventArgs($"{workItem.Name} - Completed"));
                 StatusUpdated?.Invoke(this, new StatusUpdatedEventArgs($"Queue Count - {this.QueueCount}"));
                 ExecuteWorkItem();
