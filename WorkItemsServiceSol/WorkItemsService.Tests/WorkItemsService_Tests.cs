@@ -70,7 +70,21 @@ namespace ProcessWorkItems_Tests
             moqAsyncService.Setup(c => c.DoTask(It.IsAny<IWorkItem>()))
                            .Callback<IWorkItem>((workItem) =>
                            {
-                               workItemNames += workItem.Name.ToString();
+                               if (workItem.Equals(moqWorkItem1.Object))
+                               {
+                                   workItemNames += workItem.Name.ToString();
+                                   moqWorkItem1.Raise(x => x.WorkItemStatusUpdated += null,
+                                        moqWorkItem1.Object,
+                                        new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Completed));
+                               }
+
+                               if (workItem.Equals(moqWorkItem2.Object))
+                               {
+                                   workItemNames += workItem.Name.ToString();
+                                   moqWorkItem2.Raise(x => x.WorkItemStatusUpdated += null,
+                                        moqWorkItem2.Object,
+                                        new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Completed));
+                               }
                            });
             workerManager.Service = (IAsyncRun)moqAsyncService.Object;
 

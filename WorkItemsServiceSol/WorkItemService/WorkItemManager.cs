@@ -54,6 +54,7 @@ namespace WorkItemsService
         {
             if (!this.IsServiceRunning)
             {
+                this.IsServiceRunning = true;
                 IWorkItem workItem = null;
                 lock (lockQueue)
                 {
@@ -67,6 +68,10 @@ namespace WorkItemsService
                     workItem.WorkItemStatusUpdated += WorkItem_WorkItemStatusUpdated;
                     asyncService.DoTask(workItem);
                     StatusUpdated?.Invoke(this, new StatusUpdatedEventArgs($"{workItem.Name} - Started"));
+                }
+                else
+                {
+                    this.IsServiceRunning = false;
                 }
             }
         }

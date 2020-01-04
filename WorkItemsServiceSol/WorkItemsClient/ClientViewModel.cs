@@ -8,13 +8,17 @@ namespace WorkItemsClient
     {
         private int duration;
         private string name;
+        private string url;
         private string response;
         private IWorkItemManager workItemManager;
 
         public ClientViewModel()
         {
             AddCommand = new DelegateCommand(ExecuteAdd, CanExecuteAdd);
-
+            UrlAddCommand = new DelegateCommand(ExecuteUrlAdd, CanExecuteUrlAdd);
+            this.name = "A";
+            this.duration = 10;
+            this.url = "https://www.google.com";
             InitService();
         }
 
@@ -35,7 +39,14 @@ namespace WorkItemsClient
             return (!string.IsNullOrEmpty(Name) && Duration > 0);
         }
 
+        private bool CanExecuteUrlAdd()
+        {
+            return (!string.IsNullOrEmpty(Url));
+        }
+
         public DelegateCommand AddCommand { get; private set; }
+
+        public DelegateCommand UrlAddCommand { get; private set; }
 
         public string Name
         {
@@ -44,6 +55,16 @@ namespace WorkItemsClient
             {
                 SetProperty(ref this.name, value);
                 AddCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        public string Url
+        {
+            get => this.url;
+            set
+            {
+                SetProperty(ref this.url, value);
+                UrlAddCommand.RaiseCanExecuteChanged();
             }
         }
 
@@ -62,6 +83,14 @@ namespace WorkItemsClient
             if (Duration > 0)
             {
                 workItemManager?.AddWorkItem(new WorkItem(Name, Duration));
+            }
+        }
+
+        private void ExecuteUrlAdd()
+        {
+            if (!string.IsNullOrWhiteSpace(Url))
+            {
+                workItemManager?.AddWorkItem(new WorkItemWebPage(Url));
             }
         }
 
