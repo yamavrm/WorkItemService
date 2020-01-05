@@ -30,7 +30,7 @@ namespace WorkItemsClient
 
         private void WorkItemManager_StatusUpdated(object sender, StatusUpdatedEventArgs e)
         {
-            this.Response += e.UpdateInfo + "\n";
+            this.Response += e.Message + "\n";
         }
 
 

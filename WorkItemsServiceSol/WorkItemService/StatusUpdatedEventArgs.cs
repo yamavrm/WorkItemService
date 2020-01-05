@@ -4,11 +4,11 @@ namespace WorkItemsService
 {
     public class StatusUpdatedEventArgs : EventArgs
     {
-        public StatusUpdatedEventArgs(string updateInfo)
+        public StatusUpdatedEventArgs(string message)
         {
-            this.UpdateInfo = updateInfo;
+            this.Message = message;
         }
 
-        public string UpdateInfo { get; private set; }
+        public string Message { get; private set; }
     }
 }
