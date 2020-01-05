@@ -8,11 +8,6 @@ namespace ProcessWorkItems_Tests
     [TestClass]
     public class WorkItemsTests
     {
-        private IWorkItemManager GetWorkItemManager()
-        {
-            return WorkItemManagerProvider.GetWorkItemManager();
-        }
-
         [TestMethod]
         public void When_GetTwoWorkItemManagerObjects_Expect_ShouldRefSameObject()
         {
@@ -94,6 +89,33 @@ namespace ProcessWorkItems_Tests
 
             //Assert
             Assert.AreEqual("AB", workItemNames);
+        }
+
+        [TestMethod]
+        public void When_WorkItemExecuted_Expect_ShouldRaiseStausUpdateEvents()
+        {
+            IWorkItemManager workerManager = WorkItemManagerProvider.GetWorkItemManager();
+
+            //Arrange
+            var moqWorkItem = new Mock<IWorkItem>();
+            moqWorkItem.Setup(c => c.Name).Returns("A");
+            moqWorkItem.Setup(c => c.Duration).Returns(100);
+
+            Mock<IAsyncRun> moqAsyncService = new Mock<IAsyncRun>();
+            moqAsyncService.Setup(c => c.DoTask(It.IsAny<IWorkItem>()))
+                           .Callback<IWorkItem>((workItem) =>
+                           {
+                               moqWorkItem.Raise(x => x.WorkItemStatusUpdated += null,
+                                    moqWorkItem.Object,
+                                    new WorkItemStatusUpdatedEventArgs(WorkItemStatus.Completed));
+                           });
+            workerManager.Service = (IAsyncRun)moqAsyncService.Object;
+
+            //Act
+            workerManager.AddWorkItem((IWorkItem)moqWorkItem.Object);
+
+            //Assert
+            moqAsyncService.Verify(c => c.DoTask(It.IsAny<IWorkItem>()), Times.Once);
         }
     }
 }

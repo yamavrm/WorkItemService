@@ -12,7 +12,7 @@ namespace WorkItemsService
         public event EventHandler QueueItemAdded;
         public event EventHandler<StatusUpdatedEventArgs> StatusUpdated;
 
-        public WorkItemManager()
+        internal WorkItemManager()
         {
             QueueItemAdded += WorkItemManager_QueueItemAdded;
         }
